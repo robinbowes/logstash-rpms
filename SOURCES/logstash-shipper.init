@@ -1,0 +1,100 @@
+#!/bin/bash
+# logstash-shipper  Init script for running the logstash-shipper daemon
+#
+# Author:       Robin Bowes <robin.bowes@yo61.com>
+#
+# chkconfig: - 80 05
+#
+# description: Logstash log shipper
+# processname: logstash-shipper
+# config: /etc/sysconfig/logstash-shipper
+
+PATH=/usr/bin:/sbin:/bin:/usr/sbin
+export PATH
+
+[ -f /etc/sysconfig/logstash-shipper ] && . /etc/sysconfig/logstash-shipper
+
+# Source function library
+source /etc/rc.d/init.d/functions
+
+NAME=logstash-shipper
+PROG=/usr/sbin/$NAME
+#'/usr/bin/java -cp /etc/logstash:/usr/share/logstash/logstash.jar logstash.runner'
+PROG_OPTS="-f /etc/logstash/shipper.conf -l /var/log/logstash/shipper.log"
+pidfile=${PIDFILE-/var/run/$NAME.pid}
+lockfile=/var/lock/subsys/$NAME
+RUN_AS="root"
+RETVAL=0
+
+# logstash doesn't generate a pidfile
+# Determine if we can use the -p option to daemon, killproc, and status.
+# RHEL < 5 can't.
+#if status | grep -q -- '-p' 2>/dev/null; then
+#    daemonopts="--pidfile $pidfile"
+#    pidopts="-p $pidfile"
+#fi
+
+start() {
+    echo -n $"Starting $NAME: "
+    daemon $daemonopts ${PROG} ${PROG_OPTS} ${PROG_EXTRA_OPTS}
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+        touch ${lockfile}
+        success
+    else
+        failure
+    fi
+    echo
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping $NAME: "
+    killproc $pidopts $PROG
+    RETVAL=$?
+    [ $RETVAL = 0 ] && success || failure
+    rm -f ${lockfile} ${pidfile}
+    echo
+    return $RETVAL
+}
+
+restart() {
+    stop
+    start
+}
+
+rh_status() {
+    status $pidopts $PROG
+    RETVAL=$?
+    return $RETVAL
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+	start
+	;;
+    stop)
+	stop
+	;;
+    restart)
+	restart
+	;;
+    condrestart)
+	[ -e "${SUBSYS}" ] && restart
+	RETVAL="$?"
+	;;
+    status)
+	status -p "${PIDFILE}" "${NAME}"
+	RETVAL="$?"
+	;;
+    *)
+	echo $"Usage $0 {start|stop|status|restart|condrestart}"
+	RETVAL=1
+esac
+
+exit $RETVAL
+
