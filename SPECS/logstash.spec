@@ -2,7 +2,7 @@
 
 Name:           logstash
 Version:        1.1.0.1
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        logstash is a tool for managing events and logs.
 
 Group:          System Environment/Daemons
@@ -18,6 +18,9 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
 Requires:       java-openjdk
+# Requires:       grok
+# Requires:       java
+
 Requires:       chkconfig initscripts
 
 # disable jar repackaging
@@ -76,8 +79,11 @@ ln -s %{jarfile} "${RPM_BUILD_ROOT}%{_datadir}/%{name}/%{name}.jar"
 # the log4j config
 %{__install} -Dp -m0644 %{SOURCE3} "${RPM_BUILD_ROOT}%{_sysconfdir}/%{name}/"
 
-# /var/lib/logstash/tmp
-%{__mkdir_p} "${RPM_BUILD_ROOT}/%{_var}/lib/%{name}/tmp"
+# /var/lib/logstash/shipper/tmp
+%{__mkdir_p} "${RPM_BUILD_ROOT}/%{_var}/lib/%{name}/shipper/tmp"
+
+# /var/lib/logstash/indexer/tmp
+%{__mkdir_p} "${RPM_BUILD_ROOT}/%{_var}/lib/%{name}/indexer/tmp"
 
 # /var/log/logstash
 %{__mkdir_p} "${RPM_BUILD_ROOT}/%{_var}/log/%{name}"
@@ -108,10 +114,11 @@ fi
 %defattr(-,root,root,-)
 %dir %{_sysconfdir}/%{name}
 %{_datadir}/%{name}/*.jar
-%{_var}/lib/%{name}
-%attr(0755,logstash,logstash) %{_var}/log/%{name}
+%dir %{_var}/lib/%{name}
+%dir %attr(0755,logstash,logstash) %{_var}/log/%{name}
 
 %files indexer
+%attr(0755,logstash,logstash) %{_var}/lib/%{name}/indexer
 
 %files shipper
 %defattr(-,root,root,-)
@@ -119,12 +126,15 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/log4j.properties
 %{_initrddir}/%{name}-shipper
 %{_sbindir}/%{name}-shipper
+%attr(0755,logstash,logstash) %{_var}/lib/%{name}/shipper
 
 %files web
 
 %changelog
+* Tue Apr 17 2012 Robin Bowes <robin.bowes@yo61.com> 1.1.0.1-5
+- use different tmp dirs for indexer + shippper packages
 * Mon Apr 16 2012 Robin Bowes <robin.bowes@yo61.com> 1.1.0.1-4
-- Set tmpdir to /var/lib/logstash/tmp to work when /tmp is mounted noexec
+- Set tmpdir to /var/lib/logstash to work with /tmp mounted noexec
 * Fri Apr 13 2012 Robin Bowes <robin.bowes@yo61.com> 1.1.0.1-3
 - Fix up init script and wrapper to daemonise correctly
 * Thu Apr 12 2012 Robin Bowes <robin.bowes@yo61.com> 1.1.0.1-2

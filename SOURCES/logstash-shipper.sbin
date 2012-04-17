@@ -1,6 +1,6 @@
 #!/bin/bash
-cd /var/lib/logstash
-JAVATMP=./tmp
+cd /var/lib/logstash/shipper
+JAVATMP="${PWD}/tmp"
 JAVAOPTS="-Djava.io.tmpdir=$JAVATMP"
 FULLNAME="$0"
 exec -a "${FULLNAME}" java $JAVAOPTS -cp /etc/logstash/:/usr/share/logstash/logstash.jar logstash.runner agent "$@" &
